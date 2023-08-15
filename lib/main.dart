@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-void main() =>  runApp(BytebankApp());
+void main() => runApp(BytebankApp());
 
 class BytebankApp extends StatelessWidget {
   const BytebankApp({Key? key}) : super(key: key);
@@ -9,16 +9,13 @@ class BytebankApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
-        body: FormularioTransferencia(),
-
+        body: ListaTransferencias(),
       ),
     );
   }
 }
 
-
 class FormularioTransferencia extends StatelessWidget {
-
   final TextEditingController _controladorNumeroConta = TextEditingController();
   final TextEditingController _controladorValor = TextEditingController();
 
@@ -27,81 +24,104 @@ class FormularioTransferencia extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Criando Transferencia"),),
+      appBar: AppBar(
+        title: const Text("Criando Transferencia"),
+      ),
       body: Column(
         children: <Widget>[
-          Padding(
-            padding: EdgeInsets.all(16.0),
-            child: TextField(
-              controller: _controladorNumeroConta,
-              style: const TextStyle(
-                fontSize: 24
-              ),
-              decoration: const InputDecoration(
-                labelText: 'Numero da conta',
-                hintText: '0000'
-              ),
-              keyboardType: TextInputType.number,
-            ),
-          ), Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: _controladorValor,
-              style: const TextStyle(
-                fontSize: 24
-              ),
-              decoration: const InputDecoration(
-                icon: Icon(Icons.monetization_on),
-                labelText: 'Valor',
-                hintText: '0.00'
-              ),
-              keyboardType: TextInputType.number,
-            ),
-          ),
-
+          Editor(
+              controlador: _controladorNumeroConta,
+              rotulo: "Numero da conta",
+              dica: '0000',
+              icone: null),
+          Editor(
+              controlador: _controladorValor,
+              rotulo: 'Valor',
+              dica: '0.00',
+              icone: Icons.monetization_on),
           ElevatedButton(
-              onPressed: (){
-                debugPrint('clicou no confirmar');
-                final int? numeroConta = int.tryParse(_controladorNumeroConta.text);
-                final double? valor = double.tryParse(_controladorValor.text);
-                if(valor != null && numeroConta != null) {
-                  final transferenciaCriada = Transferencia(valor, numeroConta);
-                  debugPrint('$transferenciaCriada');
-                }
-              },
-              child: Text("Confirmar"))
+            child: Text("Confirmar"),
+            onPressed: () => _criaTransferencia(context),
+          )
         ],
+      ),
+    );
+  }
+
+  void _criaTransferencia(BuildContext context) {
+    final int? numeroConta = int.tryParse(_controladorNumeroConta.text);
+    final double? valor = double.tryParse(_controladorValor.text);
+    if (valor != null && numeroConta != null) {
+      final transferenciaCriada = Transferencia(valor, numeroConta);
+      debugPrint('criando a transferencia');
+      debugPrint('$transferenciaCriada');
+      Navigator.pop(context, transferenciaCriada);
+    }
+  }
+}
+
+class Editor extends StatelessWidget {
+  final TextEditingController? controlador;
+  final String? rotulo;
+  final String? dica;
+  final IconData? icone;
+
+  Editor({this.controlador, this.rotulo, this.dica, this.icone});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.all(16.0),
+      child: TextField(
+        controller: controlador,
+        style: TextStyle(fontSize: 24),
+        decoration: InputDecoration(
+            icon: icone != null ? Icon(icone) : null,
+            labelText: rotulo,
+            hintText: dica),
+        keyboardType: TextInputType.number,
       ),
     );
   }
 }
 
-class ListaTransferencias extends StatelessWidget{
+class ListaTransferencias extends StatelessWidget {
+
+  final List<Transferencia> _transferencias = [];
+
   @override
   Widget build(BuildContext context) {
     // TODO: implement build
     return Scaffold(
-      appBar: AppBar(title: const Text('Transferencias'),
+      appBar: AppBar(
+        title: const Text('Transferencias'),
       ),
-      body: Column(
-        children: <Widget>[
-         ItemTransferencia(Transferencia(100,1000)),
-          ItemTransferencia(Transferencia(200,2000)),
-        ],
+      body: ListView.builder(
+        itemCount: _transferencias.length,
+        itemBuilder: (BuildContext context, int index) {
+          final transferencia = _transferencias[index];
+          return ItemTransferencia(transferencia);
+        },
       ),
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.add),
-        onPressed: (){
-          print('clicou no +');
+        onPressed: () {
+          final Future future =
+              Navigator.push(context, MaterialPageRoute(builder: (context) {
+            return FormularioTransferencia();
+          }));
+          future.then((transferenciaRecebida) {
+            debugPrint('chegou no then do future');
+            debugPrint('$transferenciaRecebida');
+            _transferencias.add(transferenciaRecebida);
+          });
         },
       ),
     );
   }
-
 }
 
-class ItemTransferencia extends StatelessWidget{
-
+class ItemTransferencia extends StatelessWidget {
   final Transferencia _transferencia;
 
   ItemTransferencia(this._transferencia);
@@ -111,17 +131,14 @@ class ItemTransferencia extends StatelessWidget{
     // TODO: implement build
     return Card(
         child: ListTile(
-          leading: const Icon(Icons.monetization_on),
-          title: Text(_transferencia.valor.toString()),
-          subtitle: Text(_transferencia.numeroConta.toString()),
-        )
-    );
+      leading: const Icon(Icons.monetization_on),
+      title: Text(_transferencia.valor.toString()),
+      subtitle: Text(_transferencia.numeroConta.toString()),
+    ));
   }
-
 }
 
-class Transferencia{
-
+class Transferencia {
   final double valor;
   final int numeroConta;
 
